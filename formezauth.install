@@ -1,0 +1,106 @@
+<?php
+
+/*
+* DEFAULT FIRST SERVER ADDRESS
+*/ 
+define('FORMEZAUTH_SERVER_ADDR', 'https://auth.formez.eu');
+
+
+/**
+* Implements hook_schema()
+*
+**/
+function formezauth_schema(){
+
+   $schema['formezauth_fmap'] = array(
+
+	  'description' => 'Mappatura dei campi FormezAuth.',
+	  'fields' => array(
+	  		'local_field' => array('type' => 'varchar','length' => 255,'not null' => TRUE),
+	  		'fa_field'=> array('type' => 'varchar','length' => 255,'not null' => FALSE, 'default' => ''),
+	  		// tipo di gestione del campo del profilo
+	  		// può essere core, profile, profile2
+	  		'entity_type'=> array('type' => 'varchar','length' => 20,'not null' => TRUE, 'default' => 'user'),
+	  		'col_default'=> array('type' => 'varchar','length' => 255,'not null' => FALSE, 'default' => NULL),
+	  	),
+	  'primary key' => array('local_field'),
+	  'indexes' => array('id' => array('fa_field') ),
+
+	);
+
+   $schema['formezauth_server_map'] = array(
+
+	  'description' => 'Mappatura dei campi FormezAuth del server.',
+	  'fields' => array(
+	  		'fa_field'=> array('type' => 'varchar','length' => 255,'not null' => TRUE, 'default' => ''),
+	  		'info' => array('type' => 'text','not null' => FALSE),
+	  	),
+	  'primary key' => array('fa_field'),
+	);
+
+  return $schema;
+}
+
+
+/*
+ * Implementation of hook_install()
+*/
+
+function formezauth_install() {
+	
+
+	variable_set('formezauth_server_addr', FORMEZAUTH_SERVER_ADDR);
+	variable_set('formezauth_account_create', TRUE);
+	variable_set('formezauth_disable_profile_change', 1);
+
+	if(function_exists('_formezauth_refresh_server_fields')){
+
+		_formezauth_refresh_server_fields(false);
+		drupal_set_message(t('Mappatura campi aggiornata dal server'));
+	}
+	else{
+		drupal_set_message(t('Mappatura campi non aggiornata dal server: è necessario mappare i campi disponibili dalla configurazione del modulo'), 'warning');
+	}
+}
+
+/*
+ * Implementation of hook_uninstall()
+*/
+
+function formezauth_uninstall() {
+
+	variable_del('formezauth_server_addr');
+	variable_del('formezauth_account_create');
+	variable_del('formezauth_disable_profile_change');
+
+}
+
+
+function formezauth_enable(){
+
+
+	$perms=array(
+		'access connections tab' => TRUE,
+		//'connect with oauthconnector_formezauth' => TRUE,
+		'sync local profile with connections' => TRUE,
+		'oauth authorize any consumers' => TRUE,
+		'oauth register any consumers' => TRUE,
+	);
+
+	user_role_change_permissions(DRUPAL_ANONYMOUS_RID, $perms);
+}
+
+
+/**
+ * Add newcol field to {mytable1} table.
+ */
+function formezauth_update_7100() {
+  $spec = array(
+    'type' => 'varchar',
+    'description' => "Default per la mappatura del campo",
+    'length' => 255,
+    'not null' => FALSE,
+  ); 
+  db_add_field( 'formezauth_fmap', 'col_default', $spec);
+}
+
