@@ -709,7 +709,9 @@ function formezauth_user_login (&$edit, $account) {
   	$edit['status']=$_SESSION['oauth_user_data']['status'];
 	
 	// uuid
-  	$edit['uuid']=$_SESSION['oauth_user_data']['uuid'];
+	if($edit['uid'] > 1 ){
+	    $edit['uuid']=$_SESSION['oauth_user_data']['uuid'];
+	}
 
   	// check Profile2
   	$profile_exists= (module_exists('profile2') && function_exists('profile2_load_by_user')) ? true:false;
