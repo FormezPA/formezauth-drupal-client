@@ -79,9 +79,12 @@ function formezauth_user_login (&$edit, $account) {
               $arr_fields = explode(":", $row->local_field, 2);
               $column = null;
               
-              if(count($arr_fields) == 2){
+              if(count($arr_fields) == 2 && $arr_fields[1]!='format'){
                   $field = $arr_fields[0];
                   $column = $arr_fields[1];
+              }
+              else{
+                  $field = $arr_fields[0];
               }
 
               // campi singoli
