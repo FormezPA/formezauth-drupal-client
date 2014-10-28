@@ -76,7 +76,13 @@ function formezauth_user_login (&$edit, $account) {
 
 
               // identifica campi con i due punti
-              list($field, $column)=explode(":", $row->local_field);
+              $arr_fields = explode(":", $row->local_field, 2);
+              $column = null;
+              
+              if(count($arr_fields) == 2){
+                  $field = $arr_fields[0];
+                  $column = $arr_fields[1];
+              }
 
               // campi singoli
               if($column==null){
