@@ -104,51 +104,6 @@ function _formezauth_test_page1(){
 }
 
 
-
-
-
-function _formezauth_sync_connector_new_url($new_provider_url){
-
-
-/*
-	$provider=oauthconnector_provider_load('formezauth');
-
-	if(is_object($provider)){
-
-		if (isset($provider->csid) && !empty($provider->csid)) {
-	    $provider->consumer = DrupalOAuthConsumer::loadById($provider->csid, FALSE);
-	    $provider->consumer_key=$provider->consumer->key;
-	    $provider->consumer_secret=$provider->consumer->secret;
-	  }
-
-		$old_url=$provider->url;
-
-		$provider->url=$new_provider_url;
-
-		foreach($provider->mapping['fields'] as $k=>$field){
-
-			$provider->mapping['fields'][$k]['resource']=str_replace($old_url, $new_provider_url, $provider->mapping['fields'][$k]['resource']);
-		}
-
-		$new_provider=oauthconnector_provider_save($provider);
-	}
-	*/
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /**
  *
  * Questa non sembra funzionare... 
@@ -158,38 +113,28 @@ function formezauth_form_profile2_form_alter(&$form, &$form_state) {
 }
 
 
-
-
-
-
 /**
  * Implements oauthconnector_fetch_field_value
  * Aggiunge una creazione di sessione che sarà poi utilizzata in fase di login
  * @see formezauth_user_login()
  */
 function formezauth_oauthconnector_fetch_field_value_alter($a, $b, $c){
-
   $_SESSION['oauth_user_data']=$b;
 }
 
-
-
-
 /**
  * Implements hook_connector_action_alter().
- *
  * We change the default connector to redirect to our own action.
  */
 function formezauth_connector_action_alter(&$connector_actions) {
 
+  /*
   $fp=fopen('/tmp/debug.fa.log', "w");
   fwrite($fp, json_encode($connector_actions));
   fclose($fp);
-  
+  */
   $connector_actions['default']['create account callback'] = '_formezauth_create_account';
 }
-
-
 
 /**
  *  Carica il javascript che apre l'autenticazione nel popup
@@ -199,7 +144,6 @@ function formezauth_init($all_pages=true){
 
   // Check for front page
     if(drupal_is_front_page() || $all_pages){
-
       drupal_add_js( drupal_get_path('module', 'formezauth') . '/formezauth.js');
     }
 }

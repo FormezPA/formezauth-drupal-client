@@ -20,6 +20,11 @@ function formezauth_user_login(&$edit, $account) {
     drupal_set_message(t('An error occurred and processing did not complete. [SESSION:OAUTH_USER_DATA_NOT_EXISTS]'), 'error');
     return ;
   }
+  
+  if (intval($_SESSION['oauth_user_data']['uid']) === 1){
+    drupal_set_message(t('The login from the FormezAuth ADMIN user is disabled. [SESSION:OAUTH_USER_UID_ADMIN]'), 'error');
+    return false;
+  }
 
   // Settings
   // interroga la tabella per determinare i tipi
@@ -258,28 +263,22 @@ function formezauth_form_alter(&$form, $form_state, $form_id) {
 function _formezauth_create_account($connector_name, $cid = NULL, $consumer = NULL, $access_token = NULL, $request_token = NULL) {
 
   if ($connector_name != "oauthconnector_formezauth"){
-    $fp = fopen('/tmp/falog', 'a');
-    fwrite($fp, 'skip formezauth');
-    fclose($fp);
-
     return _connector_create_account($connector_name, $cid, $consumer, $access_token, $request_token);
   }
-
-  $fp = fopen('/tmp/falog', 'a');
-  fwrite($fp, 'use formezauth');
-  fclose($fp);
-
-
-
-//  $fp=fopen('/tmp/fa.log','w');
-//  fwrite($fp, "--ENTRATO--\n\n".json_encode($connector_name));
-//  fclose($fp);
-
-
+  
+  // Nega l'accesso all'ADMIN di FormezAuth
+  if(intval($cid) === 1){
+    drupal_set_message(t('The login from the FormezAuth ADMIN user is disabled. [SESSION:OAUTH_USER_UID_ADMIN]'), 'error');
+    return false;
+  }
+  
+  
   $connector = _connector_get_connectors($connector_name);
+  
   if (!$connector) {
     return FALSE;
   }
+  
   $authname = $connector_name . '__' . $cid;
 
   if (variable_get('formezauth_account_create', FALSE) || variable_get('user_register', 1)) {
@@ -298,12 +297,6 @@ function _formezauth_create_account($connector_name, $cid = NULL, $consumer = NU
     }
     $allowed_fields = array('uuid', 'name', 'mail');
 
-    /*
-      $fp=fopen('/tmp/fa.log','a');
-      fwrite($fp, "\nALLOWED: ". json_encode($allowed_fields));
-      fwrite($fp, "\INFO: ". json_encode($info));
-      fclose($fp);
-     */
 
     foreach ($info as $field_name => $field) {
       if (in_array($field_name, $allowed_fields)) {
@@ -315,27 +308,11 @@ function _formezauth_create_account($connector_name, $cid = NULL, $consumer = NU
                 ->execute()
                 ->rowCount();
 
-
-        /* $fp=fopen('/tmp/fa.log','a');
-          fwrite($fp, "\nUFIND: ". json_encode(array(
-          $field_name,
-          $allowed_fields,
-          $field['value'],
-          $exists,
-          )
-          ));
-          fclose($fp);
-         */
-
         if ($exists == 1) {
 
 
           if ($field_name === 'uuid'){
             $userinfo = entity_uuid_load('user', array($field['value']));
-
-            // $fp=fopen('/tmp/fa.log','a');
-            // fwrite($fp, "\nUINFO: ". json_encode($userinfo));
-            // fclose($fp);
 
             if ($userinfo !== false){
               break;
