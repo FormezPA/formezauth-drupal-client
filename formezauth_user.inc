@@ -1,5 +1,6 @@
 <?php
 
+
 /**
  * 	Implements hook_user_login
  *  Funzione di mappatura dei campi da sovrascrivere ad ogni login (sincronizzazione)
@@ -9,10 +10,10 @@ function formezauth_user_login(&$edit, $account) {
 
   global $user, $base_url;
 
-  if (strpos($account->init, 'oauthconnector_formezauth') === false){
+  /*if (strpos($account->init, 'oauthconnector_formezauth') === false){
     drupal_set_message(t('An error occurred and processing did not complete. [SESSION:OAUTH_CONNECTOR_DOESNT_EXISTS]'), 'error');
     return;
-  }
+  }*/
 
   drupal_alter('formezauth_user_login_pre', $edit, $account);
 
@@ -141,8 +142,7 @@ function formezauth_user_login(&$edit, $account) {
           $account->picture = $picture_formezauth;
       }
 
-      // Save the account
-      user_save($account, $edit);
+      
     }
 
 
@@ -150,20 +150,57 @@ function formezauth_user_login(&$edit, $account) {
     else if ($profile_exists){
 
       $profile = profile2_load_by_user($account, $etype->entity_type);
+      
+      if(defined('FORMEZAUTH_DEBUG_VERBOSE') && FORMEZAUTH_DEBUG_VERBOSE){
+        watchdog('formezauth', 'Debug accesso utente PRE: %profile ', array('%profile' => json_encode($profile)), WATCHDOG_NOTICE);
+      }
 
       if (!isset($profile->pid)){
 
         $profile = profile2_create(array('user' => $user, 'type' => $etype->entity_type));
         profile2_save($profile);
       }
-
+      
+      $rows_debug=array();
+      
       foreach ($result as $row) {
+          
+        list($_local_field_name, $_local_field_attr) = explode(":", $row->local_field);
 
         if (isset($_SESSION['oauth_user_data'][$row->fa_field][LANGUAGE_NONE][0]['value'])){
+          
+          if(defined('FORMEZAUTH_DEBUG_VERBOSE') && FORMEZAUTH_DEBUG_VERBOSE){
+            $rows_debug[]=$row;
+          }
 
           $sess_val = $_SESSION['oauth_user_data'][$row->fa_field][LANGUAGE_NONE][0]['value'];
-          $profile->{$row->local_field}[LANGUAGE_NONE][0]['value'] = $sess_val;
+          
+          $profile->{$_local_field_name}[LANGUAGE_NONE][0][$_local_field_attr] = $sess_val;
         }
+        
+        // Campi vuoti
+        else if(isset($_SESSION['oauth_user_data'][$row->fa_field]) 
+                && is_array($_SESSION['oauth_user_data'][$row->fa_field])
+                && count($_SESSION['oauth_user_data'][$row->fa_field])==0){
+              
+          $profile->{$_local_field_name}[LANGUAGE_NONE][0][$_local_field_attr]='';
+        }
+      }
+      
+      // @tb: handle innovatoripa user avatar image (eccezione INNOVATORIPA)
+      if(variable_get('formezauth_manage_image', '')!='' && $_SESSION['oauth_user_data']['picture']['filename'] != ''){
+        $manage = true;
+        $image = variable_get('formezauth_manage_image', '') . $_SESSION['oauth_user_data']['picture']['filename'];
+        $file_location = system_retrieve_file($image, 'public://pictures',$manage); 
+        $file = file_load(db_query('SELECT MAX(fid) FROM {file_managed}')->fetchField());
+        $profile->field_profile_avatar = array(LANGUAGE_NONE => array('0' => (array)$file));
+      }
+      
+      
+      // Debug Verbose
+      if(defined('FORMEZAUTH_DEBUG_VERBOSE') && FORMEZAUTH_DEBUG_VERBOSE){
+        watchdog('formezauth', 'Debug accesso utente CAMPI: %rows_debug', array('%rows_debug' => json_encode($rows_debug)), WATCHDOG_NOTICE);
+        watchdog('formezauth', 'Debug accesso utente POST: %profile ', array('%profile' => json_encode($profile)), WATCHDOG_NOTICE);
       }
       
       // Salva il profilo
@@ -171,6 +208,9 @@ function formezauth_user_login(&$edit, $account) {
       
     }
   }
+
+  // Save the account
+  user_save($account, $edit);
 
   watchdog('formezauth', 'Login e aggiornamento utente %username', array('%username' => $user->name), WATCHDOG_INFO);
 
@@ -227,7 +267,7 @@ function formezauth_form_alter(&$form, $form_state, $form_id) {
 
       } else if ($formezauth_profile_policy == 1){
 
-
+        
         drupal_set_message('La modifica del proprio profilo da questo sito è <strong>limitata</strong>. Alcuni campi possono essere modificati da <a href="' . $serv_address . '/user">FormezAuth</a>', 'warning');
 
         $result = db_query("SELECT local_field, entity_type FROM {formezauth_fmap} 
@@ -245,7 +285,6 @@ function formezauth_form_alter(&$form, $form_state, $form_id) {
 
           }
         }
-
 
       } else{
         

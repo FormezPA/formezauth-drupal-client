@@ -8,6 +8,8 @@ module_load_include('inc', 'formezauth', 'formezauth_admin');
 module_load_include('inc', 'formezauth', 'formezauth_block');
 module_load_include('inc', 'formezauth', 'formezauth_user');
 
+define('FORMEZAUTH_DEBUG_VERBOSE', false);
+
 
 /**
  * Implements hook_menu().
